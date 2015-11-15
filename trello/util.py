@@ -1,10 +1,10 @@
-#!/usr/bin/python
-
+# -*- coding: utf-8 -*-
+from __future__ import with_statement, print_function, absolute_import
 import os
-
 from requests_oauthlib import OAuth1Session
 
-def create_oauth_token(expiration=None, scope=None, key=None, secret=None):
+
+def create_oauth_token(expiration=None, scope=None, key=None, secret=None, name=None, output=True):
     """
     Script to obtain an OAuth token from Trello.
 
@@ -23,6 +23,7 @@ def create_oauth_token(expiration=None, scope=None, key=None, secret=None):
     scope = scope or os.environ.get('TRELLO_SCOPE', 'read,write')
     trello_key = key or os.environ['TRELLO_API_KEY']
     trello_secret = secret or os.environ['TRELLO_API_SECRET']
+    name = name or os.environ.get('TRELLO_NAME', 'py-trello')
 
     # Step 1: Get a request token. This is a temporary token that is used for
     # having the user authorize an access token and to sign the request to obtain
@@ -32,21 +33,23 @@ def create_oauth_token(expiration=None, scope=None, key=None, secret=None):
     response = session.fetch_request_token(request_token_url)
     resource_owner_key, resource_owner_secret = response.get('oauth_token'), response.get('oauth_token_secret')
 
-    print("Request Token:")
-    print("    - oauth_token        = %s" % resource_owner_key)
-    print("    - oauth_token_secret = %s" % resource_owner_secret)
-    print("")
+    if output:
+        print("Request Token:")
+        print("    - oauth_token        = %s" % resource_owner_key)
+        print("    - oauth_token_secret = %s" % resource_owner_secret)
+        print("")
 
     # Step 2: Redirect to the provider. Since this is a CLI script we do not
     # redirect. In a web application you would redirect the user to the URL
     # below.
 
     print("Go to the following link in your browser:")
-    print("{authorize_url}?oauth_token={oauth_token}&scope={scope}&expiration={expiration}".format(
+    print("{authorize_url}?oauth_token={oauth_token}&scope={scope}&expiration={expiration}&name={name}".format(
         authorize_url=authorize_url,
         oauth_token=resource_owner_key,
         expiration=expiration,
         scope=scope,
+        name=name
     ))
 
     # After the user has granted access to you, the consumer, the provider will
@@ -74,12 +77,15 @@ def create_oauth_token(expiration=None, scope=None, key=None, secret=None):
                             verifier=oauth_verifier)
     access_token = session.fetch_access_token(access_token_url)
 
-    print("Access Token:")
-    print("    - oauth_token        = %s" % access_token['oauth_token'])
-    print("    - oauth_token_secret = %s" % access_token['oauth_token_secret'])
-    print("")
-    print("You may now access protected resources using the access tokens above.")
-    print("")
+    if output:
+        print("Access Token:")
+        print("    - oauth_token        = %s" % access_token['oauth_token'])
+        print("    - oauth_token_secret = %s" % access_token['oauth_token_secret'])
+        print("")
+        print("You may now access protected resources using the access tokens above.")
+        print("")
+
+    return access_token
 
 if __name__ == '__main__':
     create_oauth_token()
